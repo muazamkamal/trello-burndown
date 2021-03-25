@@ -4,12 +4,29 @@
   <h2>Burn Down Chart</h2>
   <div width="200px" height="200px">
     <canvas id="burndownChart"></canvas>
+    <a id="downloadDownChart"
+        download="BurnDownChart.png"
+        href=""
+        class="btn btn-primary float-right bg-flat-color-1">
+    <i class="fa fa-download"></i>
+    </a>
+  </div>
+  <h2>Burn Up Chart</h2>
+  <div width="200px" height="200px">
+    <canvas id="burnupChart"></canvas>
+    <a id="downloadUpChart"
+        download="BurnUpChart.png"
+        href=""
+        class="btn btn-primary float-right bg-flat-color-1">
+    <i class="fa fa-download"></i>
+    </a>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
   <script>
     var ctx = document.getElementById("burndownChart");
     var ctxUp = document.getElementById("burnupChart");
     var totalPoints = {{ .Board.Points }};
+    var boardID = {{ .Board.ID }};
     var pointsSpentPerDay = {
       {{- range .Board.CardProgress -}}
         {{ .Date.Format "2006-01-02" }}: {{ .Points }},
@@ -20,28 +37,97 @@
         "{{ .Format "2006-01-02" }}",
       {{- end -}}
     ];
+
+    var totalPerDay = {
+      {{- range .Board.TargetProgress -}}
+        {{ .Date.Format "2006-01-02" }}: {{ .Points }},
+      {{- end -}}
+    };
+
     var burndownChart = new Chart(ctx, {
       type: 'line',
       data: {
         labels: days,
         datasets: [
           {
-            fill: false,
-            backgroundColor: "rgba(255, 99, 132,1)",
+            fill: true,
+            pointBackgroundColor: "rgba(255, 99, 132,1)",
+            borderColor: "rgba(255, 99, 132,0.6)",
+            backgroundColor: "rgba(255, 99, 132,0.2)",
             label: 'Estimated',
             data: getEstimatedData(),
+            lineTension: 0,
           },
           {
-            fill: false,
-            backgroundColor: "rgba(75,192,192,1)",
+            fill: true,
+            pointBackgroundColor: "rgba(75,192,192,1)",
+            borderColor: "rgba(75,192,192,0.6)",
+            backgroundColor: "rgba(75,192,192,0.2)",
             label: 'Actual',
             data: getActualData(),
+            lineTension: 0,
           }
         ]
       },
       options: {
-          lineTension: 0
+        scales: {
+          yAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: 'Story Point'
+            }
+          }],
+          xAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: 'Day'
+            }
+          }],
         }
+      },
+    });
+
+    var burnupChart = new Chart(ctxUp, {
+      type: 'line',
+      data: {
+        labels: days,
+        datasets: [
+          {
+            fill: false,
+            pointBackgroundColor: "rgba(255, 99, 132,1)",
+            borderColor: "rgba(255, 99, 132,0.6)",
+            backgroundColor: "rgba(255, 99, 132,1)",
+            label: 'Total',
+            data: getTotalData(),
+            lineTension: 0,
+          },
+          {
+            fill: false,
+            pointBackgroundColor: "rgba(75,192,192,1)",
+            borderColor: "rgba(75,192,192,0.6)",
+            backgroundColor: "rgba(75,192,192,1)",
+            label: 'Completed',
+            data: getCompletedData(),
+            lineTension: 0,
+          }
+        ]
+      },
+      options: {
+        scales: {
+          yAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: 'Story Point'
+            }
+          }],
+          xAxes: [{
+            scaleLabel: {
+              display: true,
+              labelString: 'Day'
+            }
+          }],
+        }
+      },
     });
     function getEstimatedData() {
       estimated = [];
@@ -67,6 +153,28 @@
       }
       return actual;
     }
+    function getTotalData() {
+      total = [];
+      for (i = 0; i < days.length; i++) {
+        tmpTotal = totalPerDay[days[i]] || 0;
+        total[i] = tmpTotal + (i == 0 ? 0 : total[i - 1]);
+        if (isToday(days[i])) {
+          break;
+        }
+      }
+      return total;
+    }
+    function getCompletedData() {
+      completed = [];
+      for (i = 0; i < days.length; i++) {
+        tmpCompleted = pointsSpentPerDay[days[i]] || 0;
+        completed[i] = tmpCompleted + (i == 0 ? 0 : completed[i - 1]);
+        if (isToday(days[i])) {
+          break;
+        }
+      }
+      return completed;
+    }
     function isToday(date) {
       var dateObj = new Date();
       var month = ('0' + (dateObj.getUTCMonth() + 1)).slice(-2);
@@ -74,6 +182,21 @@
       var year = dateObj.getUTCFullYear();
       return date == year + "-" + month + "-" + day;
     }
+
+    // Chart download
+    document.getElementById("downloadDownChart").addEventListener('click', function(){
+      var url_base64jp = document.getElementById("burndownChart").toDataURL("image/png");
+      var a =  document.getElementById("downloadDownChart");
+      a.download = boardID + "_Down_Chart.png"
+      a.href = burndownChart.toBase64Image();
+    });
+
+    document.getElementById("downloadUpChart").addEventListener('click', function(){
+      var url_base64jp = document.getElementById("burnupChart").toDataURL("image/png");
+      var a =  document.getElementById("downloadUpChart");
+      a.download = boardID + "_Up_Chart.png"
+      a.href = burnupChart.toBase64Image();
+    });
   </script>
   {{ template "footer" }}
 {{ end }}
