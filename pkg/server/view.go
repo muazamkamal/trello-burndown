@@ -32,6 +32,9 @@ func getViewPage(r *http.Request) *viewPage {
 	db.Preload("CardProgress", func(db *gorm.DB) *gorm.DB {
 		return db.Order("date ASC")
 	}).Where("id = ?", vars["board"]).First(&board)
+	db.Preload("TargetProgress", func(db *gorm.DB) *gorm.DB {
+		return db.Order("date ASC")
+	}).Where("id = ?", vars["board"]).First(&board)
 	return &viewPage{
 		Board:   board,
 		Dates:   getDatesBetween(board.DateStart, board.DateEnd),
