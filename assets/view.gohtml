@@ -1,12 +1,14 @@
 {{ define "view" }}
   {{ template "header" }}
   <p><a href="{{ .BaseURL }}"><i class="fa fa-arrow-left" aria-hidden="true"></i> Go back to index</a></p>
+  <h2>Burn Down Chart</h2>
   <div width="200px" height="200px">
     <canvas id="burndownChart"></canvas>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.min.js"></script>
   <script>
     var ctx = document.getElementById("burndownChart");
+    var ctxUp = document.getElementById("burnupChart");
     var totalPoints = {{ .Board.Points }};
     var pointsSpentPerDay = {
       {{- range .Board.CardProgress -}}
@@ -24,19 +26,22 @@
         labels: days,
         datasets: [
           {
-            fill: true,
-            backgroundColor: "rgba(75,192,192,0.2)",
+            fill: false,
+            backgroundColor: "rgba(255, 99, 132,1)",
             label: 'Estimated',
             data: getEstimatedData(),
           },
           {
-            fill: true,
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
+            fill: false,
+            backgroundColor: "rgba(75,192,192,1)",
             label: 'Actual',
             data: getActualData(),
           }
         ]
       },
+      options: {
+          lineTension: 0
+        }
     });
     function getEstimatedData() {
       estimated = [];
