@@ -1,8 +1,12 @@
 # trello-burndown
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/mtricht/trello-burndown)](https://goreportcard.com/report/github.com/mtricht/trello-burndown)
 
 An easy to use SCRUM burndown chart for Trello boards.
 
+## DISCLAIMER
+
+This is a modified, forked version. It can now generates burnup chart as well. Also has been modified, by the help of the [owner](https://github.com/mtricht/), to compile using Go 1.15.
 ### Getting started
 Get quickly up and runnning with the [docker image](#docker-setup--running) or [binary](#binary-setup--running).
 
