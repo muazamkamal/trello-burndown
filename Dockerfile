@@ -8,7 +8,7 @@ RUN go-bindata -o assets/views.go -pkg assets assets/...
 RUN go install ./...
 
 FROM alpine
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /root
 COPY --from=builder /go/bin/cmd /app/trello-burndown
 ENTRYPOINT ["/app/trello-burndown"]

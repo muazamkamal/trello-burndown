@@ -2,6 +2,7 @@ package trello
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -25,6 +26,15 @@ var client *trello.Client
 // Start starts watching boards that are active. Refreshes according
 // to the refresh rate set in the configuration.
 func Start() {
+	// Setting timezone using the provided environment variable from Docker
+	if tz := os.Getenv("TZ"); tz != "" {
+		var err error
+		time.Local, err = time.LoadLocation(tz)
+		if err != nil {
+			log.Printf("Error loading location '%s': %v", tz, err)
+		}
+	}
+
 	client = trello.NewClient(
 		viper.GetString("trello.apiKey"),
 		viper.GetString("trello.userToken"),
@@ -131,11 +141,23 @@ func getCardDetails(card *trello.Card, listID string, res chan *cardResult) {
 		return
 	}
 
-	var dateCreated *time.Time
+	// If the card does no have "createCard" action,
+	// likely that the card was duplicated.
+	if createdActions.Len() == 0 {
+		createdActions, err = card.GetActions(trello.Arguments{"filter": "copyCard"})
+		if err != nil {
+			res <- &cardResult{
+				Error: err,
+			}
+			return
+		}
+	}
+
+	var dateCreated time.Time
 
 	// Get date of card creation
 	for _, action := range createdActions {
-		dateCreated = &action.Date
+		dateCreated = time.Time.Local(action.Date)
 	}
 
 	if card.IDList != listID {
@@ -165,7 +187,7 @@ func getCardDetails(card *trello.Card, listID string, res chan *cardResult) {
 
 	res <- &cardResult{
 		Complete: true,
-		Date:     date.Format("2006-01-02"),
+		Date:     time.Time.Local(*date).Format("2006-01-02"),
 		Created:  dateCreated.Format("2006-01-02"),
 		Points:   points,
 	}
