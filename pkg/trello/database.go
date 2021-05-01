@@ -56,27 +56,73 @@ func saveToDatabase(board Board, m map[string]float64, targets map[string]float6
 	db.Model(oldBoard).Updates(&board)
 	db.Unscoped().Where("board_id = ?", board.ID).Delete(CardProgress{})
 	db.Unscoped().Where("board_id = ?", board.ID).Delete(TargetProgress{})
+
+	sprintDays := getDatesBetween(oldBoard.DateStart, oldBoard.DateEnd)
+
+	// For completed points
+
 	pointsInWeekend := 0.0
-	for date, points := range m {
-		date, _ := time.Parse("2006-01-02", date)
-		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
-			pointsInWeekend += points
+
+	for _, day := range sprintDays {
+		dayString := day.Format("2006-01-02")
+		completedPoints := m[dayString]
+
+		// Storing weekend points to bring over to the next monday
+		if day.Weekday() == time.Saturday || day.Weekday() == time.Sunday {
+			pointsInWeekend += completedPoints
+
+			// Skipping storing weekend points into database,
+			// this will be brought forward to the next monday.
 			continue
 		}
+
 		db.Save(&CardProgress{
-			Date:    date,
-			Points:  points + pointsInWeekend,
+			Date:    day,
+			Points:  completedPoints + pointsInWeekend,
 			BoardID: board.ID,
 		})
+
+		// Reset weekend points once monday starts.
 		pointsInWeekend = 0
 	}
 
-	for targetDate, targetPoints := range targets {
-		targetDate, _ := time.Parse("2006-01-02", targetDate)
+	// For burn up charts (calculating targets/total points)
+
+	pointsInWeekend = 0
+
+	for _, day := range sprintDays {
+		dayString := day.Format("2006-01-02")
+		targetPoints := targets[dayString]
+
+		// Storing weekend points to bring over to the next monday
+		if day.Weekday() == time.Saturday || day.Weekday() == time.Sunday {
+			pointsInWeekend += targetPoints
+
+			// Skipping storing weekend points into database,
+			// this will be brought forward to the next monday.
+			continue
+		}
+
 		db.Save(&TargetProgress{
-			Date:    targetDate,
-			Points:  targetPoints,
+			Date:    day,
+			Points:  targetPoints + pointsInWeekend,
 			BoardID: board.ID,
 		})
+
+		// Reset weekend points once monday starts.
+		pointsInWeekend = 0
 	}
+}
+
+func getDatesBetween(start time.Time, end time.Time) []time.Time {
+	delta := int(end.Sub(start).Hours())
+	var dates []time.Time
+	for index := 0; index <= delta; index++ {
+		date, _ := time.Parse("2006-01-02", start.Format("2006-01-02"))
+		date = date.Add(time.Hour * 24 * time.Duration(index))
+		delta -= 24
+		dates = append(dates, date)
+	}
+	dates = append(dates, end)
+	return dates
 }
