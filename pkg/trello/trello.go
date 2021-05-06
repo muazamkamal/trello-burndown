@@ -2,7 +2,6 @@ package trello
 
 import (
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -27,7 +26,7 @@ var client *trello.Client
 // to the refresh rate set in the configuration.
 func Start() {
 	// Setting timezone using the provided environment variable from Docker
-	if tz := os.Getenv("TZ"); tz != "" {
+	if tz := viper.GetString("tz"); tz != "" {
 		var err error
 		time.Local, err = time.LoadLocation(tz)
 		if err != nil {
