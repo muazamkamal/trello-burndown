@@ -58,10 +58,20 @@ func saveToDatabase(board Board, m map[string]float64, targets map[string]float6
 	db.Unscoped().Where("board_id = ?", board.ID).Delete(TargetProgress{})
 
 	sprintDays := getDatesBetween(oldBoard.DateStart, oldBoard.DateEnd)
+	firstDay := sprintDays[0].Format("2006-01-02")
 
 	// For completed points
 
 	pointsInWeekend := 0.0
+
+	// For activities before sprint started
+	for mDate, mVal := range m {
+		mDateAsTime, _ := time.Parse("2006-01-02", mDate)
+
+		if mDateAsTime.Before(sprintDays[0]) {
+			m[firstDay] += mVal
+		}
+	}
 
 	for _, day := range sprintDays {
 		dayString := day.Format("2006-01-02")
@@ -89,6 +99,15 @@ func saveToDatabase(board Board, m map[string]float64, targets map[string]float6
 	// For burn up charts (calculating targets/total points)
 
 	pointsInWeekend = 0
+
+	// For activities before sprint started
+	for targetDate, targetVal := range targets {
+		targetDateAsTime, _ := time.Parse("2006-01-02", targetDate)
+
+		if targetDateAsTime.Before(sprintDays[0]) {
+			targets[firstDay] += targetVal
+		}
+	}
 
 	for _, day := range sprintDays {
 		dayString := day.Format("2006-01-02")
