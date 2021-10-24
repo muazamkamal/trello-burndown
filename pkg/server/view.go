@@ -44,16 +44,18 @@ func getViewPage(r *http.Request) *viewPage {
 
 func getDatesBetween(start time.Time, end time.Time) []time.Time {
 	delta := int(end.Sub(start).Hours())
+	delta /= 24
+
 	var dates []time.Time
 	for index := 0; index <= delta; index++ {
 		date, _ := time.Parse("2006-01-02", start.Format("2006-01-02"))
 		date = date.Add(time.Hour * 24 * time.Duration(index))
-		delta -= 24
+
 		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
 			continue
 		}
 		dates = append(dates, date)
 	}
-	dates = append(dates, end)
+
 	return dates
 }
